@@ -9,7 +9,6 @@ RUN apt-get update && \
     chown -R 1001:1001 /opt/bitnami/kibana && \
     chmod 775 /opt/bitnami/kibana
 
-COPY data_processing/kibana/export.ndjson /usr/share/kibana/scripts/export.ndjson
 COPY data_processing/kibana/load_json.sh /usr/share/kibana/scripts/load_json.sh
 COPY data_processing/kibana/custom_cmd.sh /usr/share/kibana/scripts/custom_cmd.sh
 

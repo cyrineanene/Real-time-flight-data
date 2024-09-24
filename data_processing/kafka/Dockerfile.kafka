@@ -1,0 +1,19 @@
+FROM bitnami/kafka:3.3
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y python3-pip curl telnet && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /opt/bitnami/kafka && \
+    chown -R 1001:1001 /opt/bitnami/kafka && \
+    chmod 775 /opt/bitnami/kafka
+
+COPY data_processing/kafka/kafka_producer.py /usr/share/kafka/scripts/kafka_producer.py
+COPY data_processing/kafka/kafka_producer_csv.py /usr/share/kafka/scripts/kafka_producer_csv.py
+COPY data_processing/kafka/requirements.txt   /usr/share/kakfa/scripts/requirements.txt
+
+RUN pip install requirements.txt
+
+USER 1001

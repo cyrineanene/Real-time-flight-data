@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 
 data/
+data_processing/spark/airports_external.csv
+.env
