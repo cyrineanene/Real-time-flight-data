@@ -1,0 +1,16 @@
+FROM bitnami/kafka:3.3
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y python3-pip curl telnet && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /opt/bitnami/spark 
+
+COPY kafka_producer.py /opt/bitnami/kafka/kafka_producer.py
+COPY requirements.txt   /opt/bitnami/kakfa/requirements.txt
+
+RUN pip install requirements.txt
+
+USER 1001

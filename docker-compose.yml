@@ -16,8 +16,10 @@ services:
 
 #KAFKA
   kafka:
+      build:
+          context: .
+          dockerfile: Dockerfile.kafka
       container_name: kafka
-      image: docker.io/bitnami/kafka:3.3
       ports:
           - "9092:9092"
       environment:
