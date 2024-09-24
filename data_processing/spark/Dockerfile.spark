@@ -1,0 +1,28 @@
+FROM bitnami/spark:3.2.4
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y python3-pip curl telnet && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Scala 2.12
+RUN curl -LO https://downloads.lightbend.com/scala/2.12.15/scala-2.12.15.tgz && \
+    tar -xzvf scala-2.12.15.tgz -C /opt/ && \
+    rm scala-2.12.15.tgz && \
+    mv /opt/scala-2.12.15 /opt/scala
+
+# Set up environment variables for Scala
+ENV SCALA_HOME /opt/scala
+ENV PATH $PATH:$SCALA_HOME/bin
+
+RUN mkdir -p /opt/bitnami/spark/checkpoints/flight && \
+    chown -R 1001:1001 /opt/bitnami/spark/checkpoints
+
+COPY data_processing/spark/spark.py /opt/bitnami/spark/spark.py
+
+RUN pip install spark pyspark
+
+COPY data_processing/spark/airports_external.csv /opt/bitnami/spark/airports_external.csv
+
+USER 1001
