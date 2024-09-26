@@ -42,7 +42,7 @@ flight_schema = {
 if __name__ == "__main__":
 
     #Step1: configure Kafka Producer
-    bootstrap_servers = 'localhost:9092' 
+    bootstrap_servers = 'localhost:9093' 
     books_topic = "flight"
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers, 
                              value_serializer=lambda v: json.dumps(v).encode('utf-8'))

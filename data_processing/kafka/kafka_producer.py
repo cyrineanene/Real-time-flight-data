@@ -12,7 +12,8 @@ API_KEY = 'AIRLABS_API_KEY'
 base_url = 'https://airlabs.co/api/v9/flights'
 
 #Step2: Create and configure a Kafka Producer
-bootstrap_servers = 'localhost:9092'
+#Using the 9093 port because it's using Kafka from the external 
+bootstrap_servers = 'localhost:9093'
 producer = KafkaProducer(
     bootstrap_servers=bootstrap_servers, 
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
