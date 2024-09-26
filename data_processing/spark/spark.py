@@ -81,3 +81,63 @@ iata_name_dict = spark.read.csv("airports_external.csv", header=True) \
                             .rdd \
                             .map(lambda row: (row["iata"], row["Name"])) \
                             .collectAsMap()
+
+#Step 6: customized functions to determine the type of the flight, the position of the airport and the name of the airport from the csv dataset
+def determine_flight_type(dep_iata, arr_iata):
+    dep_country_code = iata_country_dict.get(dep_iata, None)
+    arr_country_code = iata_country_dict.get(arr_iata, None)
+    
+    if dep_country_code and arr_country_code:
+        if dep_country_code == arr_country_code:
+            return "Domestic"
+        else:
+            return "International"
+    else:
+        return "Unknown"
+
+def get_position(iata):
+    return iata_position_dict.get(iata, (0.0, 0.0))
+
+def get_name(iata):
+    return iata_name_dict.get(iata, None)
+
+#Step 7: registering UDFs
+flight_type_udf = udf(determine_flight_type, StringType())
+get_position_udf = udf(get_position, StructType([StructField("lat", DoubleType(), True), StructField("lon", DoubleType(), True)]))
+get_name_udf = udf(get_name, StringType())
+
+#Step 8: transforming data
+#.withColumn() => Adds new columns
+#.select() => Casts the raw Kafka message into a string
+#Filtering invalid data
+dataframe = dataframe.selectExpr("CAST(value AS STRING)") \
+    .select(from_json("value", schema).alias("data")) \
+    .select("data.*") \
+    .withColumn("hex", when(length("hex") == 6, col("hex")).otherwise(None)) \
+    .withColumn("type", flight_type_udf(col("dep_iata"), col("arr_iata"))) \
+    .withColumn("dep_pos", get_position_udf(col("dep_iata"))) \
+    .withColumn("arr_pos", get_position_udf(col("arr_iata"))) \
+    .withColumn("Departure", get_name_udf(col("dep_iata"))) \
+    .withColumn("Arrival", get_name_udf(col("arr_iata")))
+
+dataframe = dataframe.filter(~(col("position.lat").isNull() | col("position.lon").isNull() | col("position").isNull()))
+dataframe = dataframe.filter(~(col("dep_pos.lat").isNull() | col("dep_pos.lon").isNull() | col("dep_pos").isNull()))
+dataframe = dataframe.filter(~(col("arr_pos.lat").isNull() | col("arr_pos.lon").isNull() | col("arr_pos").isNull()))
+
+#Step 9: writing to ElasticSearch
+# Parameters: id: unique identifier for records in Elasticsearch => reg_number
+#             ELK node: elasticsearch
+#             port: 9200
+#             and other parameters...
+query = dataframe.writeStream \
+    .format("org.elasticsearch.spark.sql") \
+    .outputMode("update") \
+    .option("es.mapping.id", "reg_number") \
+    .option("es.nodes", "elasticsearch") \
+    .option("es.port", "9200") \
+    .option("es.nodes.wan.only", "true") \
+    .option("checkpointLocation", "tmp/checkpoint2") \
+    .option("es.resource", "esflight") \
+    .start()
+#wait fot the query termination
+query.awaitTermination()
